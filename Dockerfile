@@ -1,22 +1,19 @@
-# Use the official lightweight Node.js 18 image.
-# https://hub.docker.com/_/node
-FROM node:19-alpine
+# Use official Node.js image
+FROM node:20-slim
 
-# Create and change to the app directory.
-WORKDIR /usr/src/app
+# Set working directory
+WORKDIR /app
 
-# Copy application dependency manifests to the container image.
-# A wildcard is used to ensure both package.json AND package-lock.json are copied.
-# Copying this separately prevents re-running npm install on every code change.
+# Copy package files and install dependencies
 COPY package*.json ./
-
-# Install dependencies.
-# If you add a package-lock.json speed your build by switching to 'npm ci'.
-# RUN npm ci --only=production
 RUN npm install --production
 
-# Copy local code to the container image.
-COPY . ./
+# Copy the rest of the app
+COPY . .
 
-# Run the web service on container startup.
-CMD ["node", "index.js"]
+# Cloud Run expects the app to listen on $PORT (default 8080)
+ENV PORT=8080
+EXPOSE 8080
+
+# Start the server
+CMD ["node", "server.js"]

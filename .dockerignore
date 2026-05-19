@@ -1,5 +1,6 @@
-.dockerignore
 node_modules
-.vscode
-.idea
-.readmes
+npm-debug.log
+.env
+.git
+.gitignore
+README.md
