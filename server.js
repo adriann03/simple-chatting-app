@@ -1,11 +1,22 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const { Firestore } = require('@google-cloud/firestore');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+// Initialize Firestore — picks up credentials automatically (ADC locally, service account on Cloud Run)
+const db = new Firestore({
+  projectId: 'project-db9efd6c-428f-42e0-ad5',
+  databaseId: 'simplechatdb',
+});
+const messagesRef = db.collection('messages');
+
+// How many messages to load on startup
+const MESSAGE_HISTORY_LIMIT = 100;
 
 // Serve the frontend
 app.use(express.static(path.join(__dirname, 'public')));
@@ -13,31 +24,48 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Keep track of connected users
 const users = {};
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('A user connected:', socket.id);
+
+  // Send last 100 messages to the newly connected user
+  try {
+    const snapshot = await messagesRef
+      .orderBy('timestamp', 'asc')
+      .limitToLast(MESSAGE_HISTORY_LIMIT)
+      .get();
+
+    const history = snapshot.docs.map(doc => doc.data());
+    socket.emit('history', history);
+  } catch (err) {
+    console.error('Failed to load message history:', err);
+  }
 
   // User joins with a username
   socket.on('join', (username) => {
     users[socket.id] = username;
     console.log(`${username} joined`);
 
-    // Notify everyone
     io.emit('system', { message: `${username} joined the chat` });
-
-    // Send updated user list to everyone
     io.emit('userList', Object.values(users));
   });
 
   // User sends a message
-  socket.on('message', (text) => {
+  socket.on('message', async (text) => {
     const username = users[socket.id] || 'Anonymous';
-    console.log(`[${username}]: ${text}`);
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    io.emit('message', {
-      username,
-      text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
+    const msgData = { username, text, time, timestamp: Date.now() };
+
+    // Broadcast to everyone live
+    io.emit('message', msgData);
+
+    // Save to Firestore
+    try {
+      await messagesRef.add(msgData);
+      console.log(`[${username}]: ${text} — saved to Firestore`);
+    } catch (err) {
+      console.error('Failed to save message:', err);
+    }
   });
 
   // User disconnects
@@ -52,7 +80,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Cloud Run provides PORT via environment variable
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Chat server running on port ${PORT}`);

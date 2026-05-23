@@ -359,11 +359,21 @@
       input.value = '';
     }
 
+    // ── Load message history on connect ──
+    socket.on('history', (messages) => {
+      messages.forEach(({ username, text, time }) => {
+        appendMessage(username, text, time);
+      });
+    });
+
     // ── Receive messages ──
     socket.on('message', ({ username, text, time }) => {
+      appendMessage(username, text, time);
+    });
+
+    function appendMessage(username, text, time) {
       const messages = document.getElementById('messages');
       const isOwn = username === myUsername;
-
       const div = document.createElement('div');
       div.className = `msg ${isOwn ? 'own' : 'other'}`;
       div.innerHTML = `
@@ -372,7 +382,7 @@
       `;
       messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
-    });
+    }
 
     // ── System messages ──
     socket.on('system', ({ message }) => {
