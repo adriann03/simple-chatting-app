@@ -1,0 +1,8 @@
+{
+  "name": "Atmosphere",
+  "description": "A stealth chat application disguised as a weather app.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

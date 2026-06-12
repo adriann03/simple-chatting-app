@@ -1,58 +1,40 @@
-# Cloud Run Hello World with Cloud Code
+# Penjelasan Akses Lokasi di HP (Mobile)
 
-"Hello World" is a [Cloud Run](https://cloud.google.com/run/docs) application that renders a simple webpage.
+**Ya, aplikasi ini BISA mengakses lokasi secara otomatis saat dibuka di HP.**
 
-For details on how to use this sample as a template in Cloud Code, read the documentation for Cloud Code for [VS Code](https://cloud.google.com/code/docs/vscode/quickstart-cloud-run?utm_source=ext&utm_medium=partner&utm_campaign=CDR_kri_gcp_cloudcodereadmes_012521&utm_content=-) or [IntelliJ](https://cloud.google.com/code/docs/intellij/quickstart-cloud-run?utm_source=ext&utm_medium=partner&utm_campaign=CDR_kri_gcp_cloudcodereadmes_012521&utm_content=-).
+Pada file `WeatherScreen.tsx`, kita sudah menggunakan API bawaan browser yaitu `navigator.geolocation.getCurrentPosition()`. 
 
-### Table of Contents
-* [Getting Started with VS Code](#getting-started-with-vs-code)
-* [Getting Started with IntelliJ](#getting-started-with-intellij)
-* [Sign up for User Research](#sign-up-for-user-research)
+Agar fitur lokasi ini berjalan lancar di HP Anda, ada beberapa syarat yang harus dipenuhi:
 
----
-## Getting Started with VS Code
+### 1. Izin Pengguna (Permission)
+Saat halaman cuaca pertama kali dimuat, browser di HP (seperti Chrome atau Safari) akan memunculkan *pop-up* peringatan: **"Aplikasi ini ingin mengakses lokasi Anda"**. Anda harus menekan tombol **Izinkan (Allow)**.
 
-### Run the app locally with the Cloud Run Emulator
-1. In the Cloud Code status bar, click on the active project name and select 'Run on Cloud Run Emulator'.  
-![image](./img/status-bar.png)
+### 2. Wajib Menggunakan HTTPS
+Demi keamanan privasi, browser modern di HP **hanya mengizinkan** akses lokasi jika aplikasi di-hosting menggunakan koneksi aman (**HTTPS**). 
+* *Pengecualian:* Jika Anda menjalankan aplikasi ini secara lokal di komputer untuk testing (menggunakan `localhost` atau `127.0.0.1`), lokasi tetap bisa diakses meski tanpa HTTPS. Namun jika diakses lewat IP address di HP (misal: `http://192.168.1.5:3000`), akses lokasi akan diblokir oleh browser HP.
 
-2. Use the Cloud Run Emulator dialog to specify your [builder option](https://cloud.google.com/code/docs/vscode/deploying-a-cloud-run-app#deploying_a_cloud_run_service). Cloud Code supports Docker, Jib, and Buildpacks. See the skaffold documentation on [builders](https://skaffold.dev/docs/builders/) for more information about build artifact types.  
-![image](./img/build-config.png)
-
-3. Click ‘Run’. Cloud Code begins building your image.
-
-4. View the build progress in the OUTPUT window. Once the build has finished, click on the URL in the OUTPUT window to view your live application.  
-![image](./img/cloud-run-url.png)
-
-5. To stop the application, click the stop icon on the Debug Toolbar.
+### 3. GPS HP Harus Aktif
+Pastikan fitur Lokasi / GPS di pengaturan (Settings) HP Anda dalam keadaan menyala.
 
 ---
-## Getting Started with IntelliJ
 
-### Run the app locally with the Cloud Run Emulator
+### 💡 Catatan Jika Dijadikan Aplikasi Native (APK / iOS)
+Karena Anda sebelumnya menyebutkan **Flutter**, jika kode web React ini nantinya dibungkus menjadi aplikasi Android/iOS asli (misalnya menggunakan *WebView*, *Capacitor*, atau *Cordova*), Anda **wajib** menambahkan izin lokasi di file konfigurasi native-nya:
 
-#### Define run configuration
+**Untuk Android (di `AndroidManifest.xml`):**
+```xml
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+```
 
-1. Click the Run/Debug configurations dropdown on the top taskbar and select 'Edit Configurations'.  
-![image](./img/edit-config.png)
+**Untuk iOS (di `Info.plist`):**
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Aplikasi ini membutuhkan lokasi Anda untuk menampilkan cuaca yang akurat.</string>
+```
 
-2. Select 'Cloud Run: Run Locally' and specify your [builder option](https://cloud.google.com/code/docs/intellij/developing-a-cloud-run-app#defining_your_run_configuration). Cloud Code supports Docker, Jib, and Buildpacks. See the skaffold documentation on [builders](https://skaffold.dev/docs/builders/) for more information about build artifact types.  
-![image](./img/local-build-config.png)
-
-#### Run the application
-1. Click the Run/Debug configurations dropdown and select 'Cloud Run: Run Locally'. Click the run icon.  
-![image](./img/config-run-locally.png)
-
-2. View the build process in the output window. Once the build has finished, you will receive a notification from the Event Log. Click 'View' to access the local URLs for your deployed services.  
-![image](./img/local-success.png)
-
----
-## Sign up for User Research
-
-We want to hear your feedback!
-
-The Cloud Code team is inviting our user community to sign-up to participate in Google User Experience Research. 
-
-If you’re invited to join a study, you may try out a new product or tell us what you think about the products you use every day. At this time, Google is only sending invitations for upcoming remote studies. Once a study is complete, you’ll receive a token of thanks for your participation such as a gift card or some Google swag. 
-
-[Sign up using this link](https://google.qualtrics.com/jfe/form/SV_4Me7SiMewdvVYhL?reserved=1&utm_source=In-product&Q_Language=en&utm_medium=own_prd&utm_campaign=Q1&productTag=clou&campaignDate=January2021&referral_code=UXbT481079) and answer a few questions about yourself, as this will help our research team match you to studies that are a great fit.
+### Bagaimana Alurnya di Aplikasi Ini?
+1. HP mendeteksi koordinat (Latitude & Longitude).
+2. Aplikasi mengirim koordinat tersebut ke API **Open-Meteo** untuk mengambil data suhu dan kondisi cuaca (Hujan/Cerah).
+3. Aplikasi juga mengirim koordinat ke API **OpenStreetMap (Nominatim)** untuk mengubah titik koordinat menjadi nama Kota/Desa tempat Anda berada saat ini.
+4. Nama kota dan cuaca akan langsung tampil di layar depan sebagai kamuflase yang sempurna!
